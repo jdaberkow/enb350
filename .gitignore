@@ -1,3 +1,10 @@
+# Code Composer Studio
+/Debug
+/Release
+.xdchelp
+/.config
+/.launches
+
 # Object files
 *.o
 *.ko
