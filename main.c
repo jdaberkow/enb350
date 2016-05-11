@@ -58,8 +58,8 @@
 #include "drivers/pinout.h"
 #include "drivers/touch.h"
 
-#include "qut_tiva.h"
-#include "screen.h"
+#include "driverLib.h"
+#include <screen.h>
 
 Void timeFxn(UArg arg0);
 
@@ -75,6 +75,20 @@ tContext 	sContext;
 uint32_t 	ui32SysClock;
 uint32_t 	i;
 uint32_t 	reg_read;
+
+typedef enum{
+	INIT,
+	INIT_STATION,
+	CHECK_WORKPIECE,
+	CKECK_SAFETY_BARRIER,
+	MEASURE_WORKPIECE,
+	ACCEPT_WORKPIECE,
+	REJECT_WORKPIECE
+} state_type;
+
+state_type currentState = INIT;
+struct ColorMaterial latestColorMaterial;
+float latestHeight = 0.0;
 
 festoData_type festoData;
 
@@ -240,10 +254,6 @@ OnIntroPaint(tWidget *psWidget, tContext *psContext)
 	sRect.i16YMax = LOC_Y_ANALOG+8;
     GrRectFill(psContext, &sRect);
 
-
-
-
-
 }
 
 //*****************************************************************************
@@ -342,6 +352,26 @@ __error__(char *pcFilename, uint32_t ui32Line)
 //*****************************************************************************
 void OnButtonPress_0(tWidget *psWidget)
 {
+	if (initStation()) {
+		while (!senseWorkpiece());
+		while (senseSafetyBarrierClear());
+		struct ColorMaterial material = getMaterial();
+		if (material.black) {
+			movePlatform(true, true);
+			controlAirSlider(true);
+			controlEjector(true, true);
+			controlEjector(false, true);
+			movePlatform(false, true);
+			controlAirSlider(false);
+		}
+		else {
+			movePlatform(true, true);
+			movePlatform(false, true);
+			controlEjector(true, true);
+			controlEjector(false, true);
+		}
+	}
+	/*
     g_bHelloVisible_0 = !g_bHelloVisible_0;
 
     if(g_bHelloVisible_0)
@@ -356,6 +386,7 @@ void OnButtonPress_0(tWidget *psWidget)
         WidgetPaint(WIDGET_ROOT);
 		qut_set_gpio( 0, 0 );
     }
+    */
 }
 
 void OnButtonPress_1 (tWidget *psWidget)
@@ -515,9 +546,9 @@ Void timeFxn(UArg arg0)
 
 
 /*
- *  ======== taskFxn ========
+ *  ======== taskUpdateScreen ========
  */
-Void taskFxn(UArg a0, UArg a1)
+Void taskUpdateScreen(UArg a0, UArg a1)
 {
 	//
 	// Loop forever, processing events.
@@ -535,6 +566,99 @@ Void taskFxn(UArg a0, UArg a1)
 			updateScreen();
 
 		}
+		// Just for debugging purposes to get the height values
+
+		//Read the ADC0
+		adc0_read = QUT_ADC0_Read();
+
+		QUT_UART_Send( (uint8_t *)"\n\radc0_read=", 12 );
+		QUT_UART_Send_uint32_t( adc0_read );
+
+
+		Task_sleep(10);
+	}
+
+}
+
+/*
+ *  ======== taskStateMachine ========
+ */
+Void taskStateMachine(UArg a0, UArg a1)
+{
+	while (true) {
+		switch (currentState) {
+			case INIT:
+			    System_printf("Case INIT\n");
+				if (init()) {
+					currentState = INIT_STATION;
+				} else {
+					System_printf("Initiation failed!\n");
+					BIOS_exit(0);
+				}
+				break;
+			case INIT_STATION:
+			    System_printf("Case INIT STATION\n");
+				if (initStation()) {
+					currentState = CHECK_WORKPIECE;
+				}
+				break;
+			case CHECK_WORKPIECE:
+			    System_printf("Case WORKPIECE\n");
+				if (senseWorkpiece()) {
+					currentState = CKECK_SAFETY_BARRIER;
+				}
+				break;
+			case CKECK_SAFETY_BARRIER:
+			    System_printf("Case SAFTEY BARRIER\n");
+				if (senseSafetyBarrierClear()) {
+					currentState = MEASURE_WORKPIECE;
+				}
+				break;
+			case MEASURE_WORKPIECE:
+			    System_printf("Case MEASURE\n");
+				latestColorMaterial = getMaterial();
+				if (movePlatform(true, true)) {
+					latestHeight = getWorkpieceHeight();
+					if (false) { //TODO: decide if accepted or not
+						currentState = ACCEPT_WORKPIECE;
+					} else {
+						currentState = REJECT_WORKPIECE;
+					}
+				} else {
+					currentState = INIT_STATION;
+				}
+				break;
+			case ACCEPT_WORKPIECE:
+			    System_printf("Case ACCEPT\n");
+				if (movePlatform(false, true)) {
+					if (controlEjector(true, true)) {
+						if (controlEjector(false, true)) {
+							currentState = CHECK_WORKPIECE;
+							break;
+						}
+					}
+				}
+				currentState = INIT_STATION;
+				break;
+			case REJECT_WORKPIECE:
+			    System_printf("Case REJECT\n");
+				controlAirSlider(true);
+				if (controlEjector(true, true)) {
+					if (controlEjector(false, true)) {
+						if (movePlatform(false,true)) {
+							controlAirSlider(false);
+							currentState = CHECK_WORKPIECE;
+							break;
+						}
+					}
+				}
+				controlAirSlider(false);
+				currentState = INIT_STATION;
+				break;
+			default:
+			    System_printf("Case Default\n");
+				break;
+		}
 		Task_sleep(10);
 	}
 }
@@ -545,16 +669,24 @@ Void taskFxn(UArg a0, UArg a1)
 Int main()
 { 
     Task_Handle task;
+    Task_Handle taskHandleStateMachine;
     Error_Block eb;
 
     System_printf("enter main()\n");
 
     Error_init(&eb);
-    task = Task_create(taskFxn, NULL, &eb);
+    task = Task_create(taskUpdateScreen, NULL, &eb);
     if (task == NULL) {
         System_printf("Task_create() failed!\n");
         BIOS_exit(0);
     }
+
+    taskHandleStateMachine = Task_create(taskStateMachine, NULL, &eb);
+	if (taskHandleStateMachine == NULL) {
+		System_printf("Task_create() failed!\n");
+		BIOS_exit(0);
+	}
+
 
     ui32SysClock = 120000000;
 

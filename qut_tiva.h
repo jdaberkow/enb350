@@ -1,6 +1,13 @@
 #ifndef QUT_TIVA_H_
 #define QUT_TIVA_H_
 
+#include "driverlib/adc.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/gpio.h"
+#include "inc/hw_memmap.h"
+#include "inc/tm4c129xnczad.h"
+#include "driverlib/uart.h"
+
 //*****************************************************************************
 //
 // Simple loop to delay the program by roughly x number of seconds
