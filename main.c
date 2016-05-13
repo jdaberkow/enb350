@@ -15,6 +15,8 @@
 
 #define ADC_SEQ_NUM	0
 
+#define STARTING_TIME 1462372289
+
 //Drawing defines
 #define SPACING_X	38
 
@@ -563,6 +565,7 @@ Void taskUpdateScreen(UArg a0, UArg a1)
 			BIOS_WAIT_FOREVER);
 		if (posted & Event_Id_00) {
 			festoData.theTime = time(NULL);
+			festoData.operatingTime = time(NULL) - STARTING_TIME + 1;
 			updateScreen();
 
 		}
@@ -736,10 +739,24 @@ Int main()
 	clk1 = Clock_create(timeFxn, 5, &clkParams, NULL);
 
 	//Initialize the time
-	Seconds_set(1462372289);
+	Seconds_set(STARTING_TIME);
 
-	/* Initialize an Event Instance */
+	// Initialize an Event Instance
 	evt = Event_create(NULL, NULL);
+
+	// Initialize the festoData struct
+	festoData.theTime         = time(NULL);
+	festoData.operatingTime   = 0;
+	festoData.screenState     = STATUS;
+	festoData.currentMaterial = UNKNOWN_MATERIAL;
+	festoData.currentColor    = UNKNOWN_COLOR;
+	festoData.currentHeight   = 0;
+	festoData.countTotal      = 0;
+	festoData.countAccepted   = 0;
+	festoData.countMetallic   = 0;
+	festoData.countBlack      = 0;
+	festoData.thresholdTop    = 30;
+	festoData.thresholdBottom = 20;
 
 	//Initialize the screen
 	initScreen(&festoData);

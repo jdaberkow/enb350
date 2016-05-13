@@ -6,8 +6,8 @@
 #include <time.h>
 
 typedef enum {STATUS, CALIBRATE, THRESHOLD} screenState_type;
-typedef enum {METALLIC, NON_METALLIC} material_type;
-typedef enum {BLACK, NON_BLACK} color_type;
+typedef enum {METALLIC, NON_METALLIC, UNKNOWN_MATERIAL} material_type;
+typedef enum {BLACK, NON_BLACK, UNKNOWN_COLOR} color_type;
 
 typedef struct
 {
