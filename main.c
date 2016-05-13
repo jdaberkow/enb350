@@ -569,11 +569,12 @@ Void taskUpdateScreen(UArg a0, UArg a1)
 		// Just for debugging purposes to get the height values
 
 		//Read the ADC0
+		/*
 		adc0_read = QUT_ADC0_Read();
 
 		QUT_UART_Send( (uint8_t *)"\n\radc0_read=", 12 );
 		QUT_UART_Send_uint32_t( adc0_read );
-
+*/
 
 		Task_sleep(10);
 	}
@@ -618,7 +619,7 @@ Void taskStateMachine(UArg a0, UArg a1)
 			    System_printf("Case MEASURE\n");
 				latestColorMaterial = getMaterial();
 				if (movePlatform(true, true)) {
-					latestHeight = getWorkpieceHeight();
+					latestHeight = getRawWorkpieceHeight();
 					if (false) { //TODO: decide if accepted or not
 						currentState = ACCEPT_WORKPIECE;
 					} else {

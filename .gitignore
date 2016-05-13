@@ -4,6 +4,7 @@
 .xdchelp
 /.config
 /.launches
+/src
 
 # Object files
 *.o

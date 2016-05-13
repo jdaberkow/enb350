@@ -27,7 +27,7 @@ bool senseWorkpiece();
 /* Sense Safety Barrier */
 bool senseSafetyBarrierClear();
 /* Return the height of workpiece as a human readable value (unit:mm) */
-float getWorkpieceHeight();
+uint32_t getRawWorkpieceHeight();
 /* Get Color and Material, returning a struct which contains two bool values (material and color)*/
 struct ColorMaterial getMaterial();
 
