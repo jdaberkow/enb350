@@ -17,25 +17,6 @@
 
 #define STARTING_TIME 1462372289
 
-//Drawing defines
-#define SPACING_X	38
-
-#define LOC_X_0	27
-#define LOC_X_1	LOC_X_0+SPACING_X
-#define LOC_X_2	LOC_X_1+SPACING_X
-#define LOC_X_3	LOC_X_2+SPACING_X
-#define LOC_X_4	LOC_X_3+SPACING_X
-#define LOC_X_5	LOC_X_4+SPACING_X
-#define LOC_X_6	LOC_X_5+SPACING_X
-#define LOC_X_7	LOC_X_6+SPACING_X
-
-#define LOC_Y_0UTPUTS	 80
-#define LOC_Y_INPUTS	160
-#define LOC_Y_ANALOG	220
-
-#define INPUT_STATUS_IS_ONE	1
-
-
 #include <stdbool.h>
 #include <stdint.h>
 #include "inc/hw_memmap.h"
@@ -78,6 +59,10 @@ uint32_t 	ui32SysClock;
 uint32_t 	i;
 uint32_t 	reg_read;
 
+uint32_t ticksUpButton = 0;
+uint32_t ticksDownButton = 0;
+uint32_t ticksSelectButton = 0;
+
 typedef enum{
 	INIT,
 	INIT_STATION,
@@ -117,9 +102,9 @@ Void timeFxn(UArg arg0)
 
 
 /*
- *  ======== taskUpdateScreen ========
+ *  ======== taskEventHandler ========
  */
-Void taskUpdateScreen(UArg a0, UArg a1)
+Void taskEventHandler(UArg a0, UArg a1)
 {
 	//
 	// Loop forever, processing events.
@@ -130,23 +115,38 @@ Void taskUpdateScreen(UArg a0, UArg a1)
 	{
 		posted = Event_pend(evt,
 			Event_Id_NONE, /* andMask */
-			Event_Id_00,   /* orMask */
+			Event_Id_00 + Event_Id_01 + Event_Id_02 + Event_Id_03,   /* orMask */
 			BIOS_WAIT_FOREVER);
 		if (posted & Event_Id_00) {
 			festoData.theTime = time(NULL);
 			festoData.operatingTime = time(NULL) - STARTING_TIME + 1;
-			updateScreen();
-
+			Event_post(evt, Event_Id_06);
 		}
-		// Just for debugging purposes to get the height values
-
-		//Read the ADC0
-		/*
-		adc0_read = QUT_ADC0_Read();
-
-		QUT_UART_Send( (uint8_t *)"\n\radc0_read=", 12 );
-		QUT_UART_Send_uint32_t( adc0_read );
-*/
+		if (posted & Event_Id_01) {
+			if (festoData.screenState == STATUS_SCREEN) {
+				festoData.screenState = CALIBRATE;
+			}
+			else if (festoData.screenState == CALIBRATE) {
+				festoData.screenState = STATUS_SCREEN;
+			}
+			else if (festoData.screenState == THRESHOLD) {
+				festoData.screenState = CALIBRATE;
+			}
+		}
+		if (posted & Event_Id_02) {
+			if (festoData.screenState == STATUS_SCREEN) {
+				festoData.screenState = THRESHOLD;
+			}
+			else if (festoData.screenState == CALIBRATE) {
+				festoData.screenState = THRESHOLD;
+			}
+			else if (festoData.screenState == THRESHOLD){
+				festoData.screenState = STATUS_SCREEN;
+			}
+		}
+		if (posted & Event_Id_03) {
+			toggleEnableMovement();
+		}
 
 		Task_sleep(10);
 	}
@@ -236,6 +236,31 @@ Void taskStateMachine(UArg a0, UArg a1)
 	}
 }
 
+void IntUpButton(void)
+{
+	GPIOIntClear(GPIO_PORTN_BASE, GPIO_INT_PIN_3);
+
+	/* Explicit posting of Event_Id_00 by calling Event_post() */
+	Event_post(evt, Event_Id_01);
+
+}
+
+void IntDownButton(void)
+{
+	GPIOIntClear(GPIO_PORTE_BASE, GPIO_INT_PIN_5);
+
+	/* Explicit posting of Event_Id_00 by calling Event_post() */
+	Event_post(evt, Event_Id_02);
+}
+
+void IntSelectButton(void)
+{
+	GPIOIntClear(GPIO_PORTP_BASE, GPIO_INT_PIN_1);
+
+	/* Explicit posting of Event_Id_00 by calling Event_post() */
+	Event_post(evt, Event_Id_03);
+}
+
 /*
  *  ======== main ========
  */
@@ -243,12 +268,13 @@ Int main()
 { 
     Task_Handle task;
     Task_Handle taskHandleStateMachine;
+    Task_Handle taskHandleUpdateScreen;
     Error_Block eb;
 
     System_printf("enter main()\n");
 
     Error_init(&eb);
-    task = Task_create(taskUpdateScreen, NULL, &eb);
+    task = Task_create(taskEventHandler, NULL, &eb);
     if (task == NULL) {
         System_printf("Task_create() failed!\n");
         BIOS_exit(0);
@@ -259,6 +285,12 @@ Int main()
 		System_printf("Task_create() failed!\n");
 		BIOS_exit(0);
 	}
+
+	taskHandleUpdateScreen = Task_create(taskUpdateScreen, NULL, &eb);
+		if (taskHandleUpdateScreen == NULL) {
+			System_printf("Task_create() failed!\n");
+			BIOS_exit(0);
+		}
 
 
     ui32SysClock = 120000000;
@@ -292,6 +324,18 @@ Int main()
 	GPIOPinTypeGPIOOutput(GPIO_PORTQ_BASE, GPIO_PIN_7);	//GREEN Q7
 	GPIOPinTypeGPIOOutput(GPIO_PORTQ_BASE, GPIO_PIN_4);	//BLUE 	Q4
 
+	GPIOIntEnable(GPIO_PORTE_BASE, GPIO_INT_PIN_5);
+	GPIOIntEnable(GPIO_PORTN_BASE, GPIO_INT_PIN_3);
+	GPIOIntEnable(GPIO_PORTP_BASE, GPIO_INT_PIN_1);
+
+	GPIOIntTypeSet(GPIO_PORTE_BASE, GPIO_INT_PIN_5, GPIO_FALLING_EDGE);
+	GPIOIntTypeSet(GPIO_PORTN_BASE, GPIO_INT_PIN_3, GPIO_FALLING_EDGE);
+	GPIOIntTypeSet(GPIO_PORTP_BASE, GPIO_INT_PIN_1, GPIO_FALLING_EDGE);
+
+	GPIOIntRegister(GPIO_PORTE_BASE, IntDownButton);
+	GPIOIntRegister(GPIO_PORTN_BASE, IntUpButton);
+	GPIOIntRegister(GPIO_PORTP_BASE, IntSelectButton);
+
 	//Initialize the UART
 	QUT_UART_Init( ui32SysClock );
 
@@ -316,7 +360,7 @@ Int main()
 	// Initialize the festoData struct
 	festoData.theTime         = time(NULL);
 	festoData.operatingTime   = 0;
-	festoData.screenState     = STATUS;
+	festoData.screenState     = STATUS_SCREEN;
 	festoData.currentMaterial = UNKNOWN_MATERIAL;
 	festoData.currentColor    = UNKNOWN_COLOR;
 	festoData.currentHeight   = 0;

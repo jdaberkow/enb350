@@ -5,15 +5,16 @@
 #include <stdint.h>
 #include <time.h>
 
-typedef enum {STATUS, CALIBRATE, THRESHOLD} screenState_type;
+typedef enum {STATUS_SCREEN, CALIBRATE, THRESHOLD} screenState_type;
 typedef enum {METALLIC, NON_METALLIC, UNKNOWN_MATERIAL} material_type;
 typedef enum {BLACK, NON_BLACK, UNKNOWN_COLOR} color_type;
 
 typedef struct
 {
-	 screenState_type screenState;
+	 screenState_type screenStateDummy;
 	 time_t theTime;
 	 uint32_t operatingTime;
+	 screenState_type screenState;
 	 material_type currentMaterial;
 	 color_type currentColor;
 	 uint32_t currentHeight;
@@ -26,7 +27,7 @@ typedef struct
 } festoData_type;
 
 void initScreen(festoData_type *festoData);
-void updateScreen();
+void taskUpdateScreen();
 void drawStatusScreen();
 void drawCalibrateScreen();
 void drawThresholdScreen();

@@ -102,16 +102,39 @@ void initScreen(festoData_type *pFestoData) {
 	GrContextForegroundSet(&clearingContext, ClrBlack);
 }
 
-void updateScreen() {
-	/* Clear the screen to allow painting of the new frame */
-	clearScreen();
+void taskUpdateScreen() {
+	UInt posted;
 
-	/* Draw the calendar time*/
-	drawTime();
+	while(1)
+	{
+		posted = Event_pend(evt,
+			Event_Id_NONE, /* andMask */
+			Event_Id_06,   /* orMask */
+			BIOS_WAIT_FOREVER);
+		if (posted & Event_Id_06) {
+			/* Clear the screen to allow painting of the new frame */
+			clearScreen();
 
-	/* Draw the screen depending on the status we are in */
-	if (1) {
-		drawStatusScreen();
+			/* Draw the calendar time*/
+			drawTime();
+
+			/* Draw the screen depending on the status we are in */
+			switch (festoData->screenState) {
+				case STATUS_SCREEN:
+					drawStatusScreen();
+					break;
+				case CALIBRATE:
+					drawCalibrateScreen();
+					break;
+				case THRESHOLD:
+					drawThresholdScreen();
+					break;
+				default:
+					break;
+			}
+		}
+
+		Task_sleep(10);
 	}
 }
 
@@ -202,11 +225,11 @@ void drawStatusScreen() {
 }
 
 void drawCalibrateScreen() {
-
+	GrStringDraw(&sContext, "CALIBRATE", -1, 170, 153, 0);
 }
 
 void drawThresholdScreen() {
-
+	GrStringDraw(&sContext, "THRESHOLD", -1, 170, 153, 0);
 }
 
 void drawTime() {
