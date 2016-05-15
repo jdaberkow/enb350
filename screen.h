@@ -27,7 +27,7 @@ typedef struct
 } festoData_type;
 
 void initScreen(festoData_type *festoData);
-void taskUpdateScreen();
+void updateScreen();
 void drawStatusScreen();
 void drawCalibrateScreen();
 void drawThresholdScreen();

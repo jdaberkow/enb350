@@ -42,7 +42,7 @@ bool movePlatform(bool up, bool secureMovement) {
 		qut_set_gpio (0, 1);
 		qut_set_gpio (1, 0);
 		int32_t counter = 0;
-		while (counter < 500000) {
+		while (counter < 100) {
 			if (qut_get_gpio(5)) {
 				counter++;
 			}
@@ -77,12 +77,13 @@ bool controlEjector(bool extend, bool secureMovement) {
 	}
 	else {
 		qut_set_gpio (2, 0);
-		while (!qut_get_gpio(6)){
+		/*while (!qut_get_gpio(6)){
 			if (!enableMovement) {
 				return false;
 			}
 			Task_sleep(5);
-		}
+		}*/
+		Task_sleep(500);
 	}
 	return true;
 }
@@ -92,9 +93,16 @@ void controlAirSlider(bool enable) {
 }
 
 /* Enable/Disable movements: Pass bool value as a parameter true=enable, false=disable */
-void controlMovements(bool enable) {
-	enableMovement = enable;
-	qut_set_gpio (3, 0);
+bool toggleEnableMovement() {
+	if (enableMovement) {
+		qut_set_gpio (0, 0);
+		qut_set_gpio (1, 0);
+		qut_set_gpio (3, 0);
+		enableMovement = false;
+	} else {
+		enableMovement = true;
+	}
+	return enableMovement;
 }
 
 /* Sense Workpiece */
@@ -107,9 +115,14 @@ bool senseSafetyBarrierClear() {
 	return !qut_get_gpio(2);
 }
 
-/* Return the height of workpiece as a human readable value (unit:mm) */
+/* Return the raw value of the height of workpiece */
 uint32_t getRawWorkpieceHeight() {
-	return QUT_ADC0_Read;
+	return QUT_ADC0_Read();
+}
+
+/* Return the height of workpiece as a human readable value (unit:mm), given the slope and offset of the calibration */
+float getWorkpieceHeight(float slope, float offset) {
+	return getRawWorkpieceHeight() * slope + offset;
 }
 
 /* Get Color and Material, returning a struct which contains two bool values (material and color)*/

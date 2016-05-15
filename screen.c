@@ -8,7 +8,6 @@
 
 #include "utils/ustdlib.h"
 
-
 tContext 	    sContext;
 tContext 	    timeContext;
 tContext 	    mediumContext;
@@ -102,39 +101,26 @@ void initScreen(festoData_type *pFestoData) {
 	GrContextForegroundSet(&clearingContext, ClrBlack);
 }
 
-void taskUpdateScreen() {
-	UInt posted;
+void updateScreen() {
+	/* Clear the screen to allow painting of the new frame */
+	clearScreen();
 
-	while(1)
-	{
-		posted = Event_pend(evt,
-			Event_Id_NONE, /* andMask */
-			Event_Id_06,   /* orMask */
-			BIOS_WAIT_FOREVER);
-		if (posted & Event_Id_06) {
-			/* Clear the screen to allow painting of the new frame */
-			clearScreen();
+	/* Draw the calendar time*/
+	drawTime();
 
-			/* Draw the calendar time*/
-			drawTime();
-
-			/* Draw the screen depending on the status we are in */
-			switch (festoData->screenState) {
-				case STATUS_SCREEN:
-					drawStatusScreen();
-					break;
-				case CALIBRATE:
-					drawCalibrateScreen();
-					break;
-				case THRESHOLD:
-					drawThresholdScreen();
-					break;
-				default:
-					break;
-			}
-		}
-
-		Task_sleep(10);
+	/* Draw the screen depending on the status we are in */
+	switch (festoData->screenState) {
+		case STATUS_SCREEN:
+			drawStatusScreen();
+			break;
+		case CALIBRATE:
+			drawCalibrateScreen();
+			break;
+		case THRESHOLD:
+			drawThresholdScreen();
+			break;
+		default:
+			break;
 	}
 }
 

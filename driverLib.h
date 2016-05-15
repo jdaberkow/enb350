@@ -2,6 +2,7 @@
 #define DRIVERLIB__H_
 
 #include <stdbool.h>
+#include <screen.h>
 
 struct ColorMaterial {
 	bool metallic; 	/*true = metallic, false = other material*/
@@ -21,13 +22,15 @@ bool controlEjector(bool extend, bool secureMovement);
 /* Enable/Disable air slider: Pass bool value as a parameter true=enable, false=disable */
 void controlAirSlider(bool enable);
 /* Enable/Disable movements: Pass bool value as a parameter true=enable, false=disable */
-void controlMovements(bool enable);
+bool toggleEnableMovement();
 /* Sense Workpiece */
 bool senseWorkpiece();
 /* Sense Safety Barrier */
 bool senseSafetyBarrierClear();
-/* Return the height of workpiece as a human readable value (unit:mm) */
+/* Return the raw value of the height of workpiece */
 uint32_t getRawWorkpieceHeight();
+/* Return the height of workpiece as a human readable value (unit:mm), given the slope and offset of the calibration */
+float getWorkpieceHeight(float slope, float offset);
 /* Get Color and Material, returning a struct which contains two bool values (material and color)*/
 struct ColorMaterial getMaterial();
 
