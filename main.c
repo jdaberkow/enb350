@@ -12,6 +12,7 @@
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Event.h>
 #include <ti/sysbios/hal/Seconds.h>
+#include <ti/sysbios/knl/Mailbox.h>
 
 #define ADC_SEQ_NUM	0
 
@@ -67,6 +68,7 @@ Void timeFxn(UArg arg0);
 
 Event_Handle evt;
 Clock_Handle clk1;
+Mailbox_Handle mbx;
 
 uint32_t input_status[8];
 
@@ -85,12 +87,16 @@ typedef enum{
 	CKECK_SAFETY_BARRIER,
 	MEASURE_WORKPIECE,
 	ACCEPT_WORKPIECE,
-	REJECT_WORKPIECE
+	REJECT_WORKPIECE,
+	CALIBRATE_SENSOR
 } state_type;
 
 state_type currentState = INIT;
 struct ColorMaterial latestColorMaterial;
 float latestHeight = 0.0;
+
+float slope = 0.1091107474;
+float offset = 29.00981997;
 
 festoData_type festoData;
 
@@ -584,11 +590,78 @@ Void taskUpdateScreen(UArg a0, UArg a1)
 
 }
 
+bool checkWorkpiece() {
+	if (latestColorMaterial.black) {
+		festoData.currentColor = BLACK;
+		festoData.countBlack++;
+	} else {
+		festoData.currentColor = NON_BLACK;
+	}
+	if (latestColorMaterial.metallic) {
+		festoData.currentMaterial = METALLIC;
+		festoData.countMetallic++;
+	} else {
+		festoData.currentMaterial = NON_METALLIC;
+	}
+	festoData.currentHeight = latestHeight;
+	festoData.countTotal++;
+
+	if (festoData.thresholdBottom <= latestHeight && festoData.thresholdTop >= latestHeight) {
+		festoData.countAccepted++;
+		return true;
+	}
+	return false;
+}
+
+bool calibrateSensor() {
+	uint32_t height[2];
+	uint32_t heightReference[2];
+	for (int i = 0; i < 2; i++) {
+		movePlatform(false, true);
+
+		UInt posted;
+		posted = Event_pend(evt,
+					Event_Id_NONE, 				/* andMask */
+					Event_Id_01,  				/* orMask */
+					BIOS_WAIT_FOREVER);
+		while (!(posted & Event_Id_01)) {
+			Task_sleep(5);
+		}
+		while (!senseWorkpiece()) {
+			Task_sleep(5);
+		}
+
+		height[i] = getRawWorkpieceHeight();
+		movePlatform(true, true);
+		while (!Mailbox_pend(mbx, &heightReference[i], BIOS_NO_WAIT)) {
+			Task_sleep(5);
+		}
+	}
+
+	float smaller;
+	float bigger;
+	float smallerReference;
+	float biggerReference;
+	if (heightReference[0] < heightReference[1]) {
+		smallerReference = heightReference[0];
+		biggerReference = heightReference[1];
+		smaller = height[0];
+		bigger = height[1];
+	} else {
+		smallerReference = heightReference[1];
+		biggerReference = heightReference[0];
+		smaller = height[1];
+		bigger = height[0];
+	}
+
+	slope = ((float)(biggerReference - smallerReference)) / ((float)(bigger - smaller));
+	offset = ((float)smallerReference) - (slope * ((float)smaller));
+}
+
 /*
  *  ======== taskStateMachine ========
  */
-Void taskStateMachine(UArg a0, UArg a1)
-{
+Void taskStateMachine(UArg a0, UArg a1) {
 	while (true) {
 		switch (currentState) {
 			case INIT:
@@ -622,8 +695,9 @@ Void taskStateMachine(UArg a0, UArg a1)
 			    System_printf("Case MEASURE\n");
 				latestColorMaterial = getMaterial();
 				if (movePlatform(true, true)) {
-					latestHeight = getRawWorkpieceHeight();
-					if (false) { //TODO: decide if accepted or not
+					Task_sleep(500);
+					latestHeight = getWorkpieceHeight(slope, offset);
+					if (checkWorkpiece()) {
 						currentState = ACCEPT_WORKPIECE;
 					} else {
 						currentState = REJECT_WORKPIECE;
@@ -633,19 +707,7 @@ Void taskStateMachine(UArg a0, UArg a1)
 				}
 				break;
 			case ACCEPT_WORKPIECE:
-			    System_printf("Case ACCEPT\n");
-				if (movePlatform(false, true)) {
-					if (controlEjector(true, true)) {
-						if (controlEjector(false, true)) {
-							currentState = CHECK_WORKPIECE;
-							break;
-						}
-					}
-				}
-				currentState = INIT_STATION;
-				break;
-			case REJECT_WORKPIECE:
-			    System_printf("Case REJECT\n");
+				System_printf("Case REJECT\n");
 				controlAirSlider(true);
 				if (controlEjector(true, true)) {
 					if (controlEjector(false, true)) {
@@ -659,10 +721,31 @@ Void taskStateMachine(UArg a0, UArg a1)
 				controlAirSlider(false);
 				currentState = INIT_STATION;
 				break;
+			case REJECT_WORKPIECE:
+				System_printf("Case ACCEPT\n");
+				if (movePlatform(false, true)) {
+					if (controlEjector(true, true)) {
+						if (controlEjector(false, true)) {
+							currentState = CHECK_WORKPIECE;
+							break;
+						}
+					}
+				}
+				currentState = INIT_STATION;
+				break;
+			case CALIBRATE_SENSOR:
+
+				break;
 			default:
 			    System_printf("Case Default\n");
 				break;
 		}
+		UInt posted;
+		posted = Event_pend(evt,
+					Event_Id_NONE, 				/* andMask */
+					Event_Id_02,  				/* orMask */
+					BIOS_NO_WAIT);
+		if (posted & Event_Id_02) currentState = CALIBRATE_SENSOR;
 		Task_sleep(10);
 	}
 }
@@ -690,6 +773,13 @@ Int main()
 		System_printf("Task_create() failed!\n");
 		BIOS_exit(0);
 	}
+
+	Mailbox_Params mbxParams;
+	/* create a Mailbox Instance */
+	Mailbox_Params_init(&mbxParams);
+	mbxParams.readerEvent = evt;
+	mbxParams.readerEventId = Event_Id_01;
+	mbx = Mailbox_create((sizeof(uint32_t)), 1, &mbxParams, NULL);
 
 
     ui32SysClock = 120000000;
@@ -755,8 +845,8 @@ Int main()
 	festoData.countAccepted   = 0;
 	festoData.countMetallic   = 0;
 	festoData.countBlack      = 0;
-	festoData.thresholdTop    = 30;
-	festoData.thresholdBottom = 20;
+	festoData.thresholdTop    = 260;
+	festoData.thresholdBottom = 240;
 
 	//Initialize the screen
 	initScreen(&festoData);
