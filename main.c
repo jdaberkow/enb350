@@ -182,7 +182,7 @@ bool checkWorkpiece() {
 	return false;
 }
 
-bool calibrateSensor() {
+void calibrateSensor() {
 	uint32_t height[2];
 	uint32_t heightReference[2];
 	for (int i = 0; i < 2; i++) {
@@ -193,7 +193,7 @@ bool calibrateSensor() {
 					Event_Id_NONE, 				/* andMask */
 					Event_Id_01,  				/* orMask */
 					BIOS_WAIT_FOREVER);
-		while (!(posted & Event_Id_01)) {
+		while (!(posted & Event_Id_05)) {
 			Task_sleep(5);
 		}
 		while (!senseWorkpiece()) {
@@ -223,8 +223,8 @@ bool calibrateSensor() {
 		bigger = height[0];
 	}
 
-	slope = ((float)(biggerReference - smallerReference)) / ((float)(bigger - smaller));
-	offset = ((float)smallerReference) - (slope * ((float)smaller));
+	slope = (biggerReference - smallerReference) / (bigger - smaller);
+	offset = smallerReference - (slope * smaller);
 }
 
 /*
@@ -312,7 +312,7 @@ Void taskStateMachine(UArg a0, UArg a1) {
 		UInt posted;
 		posted = Event_pend(evt,
 					Event_Id_NONE, 				/* andMask */
-					Event_Id_02,  				/* orMask */
+					Event_Id_04,  				/* orMask */
 					BIOS_NO_WAIT);
 		if (posted & Event_Id_02) currentState = CALIBRATE_SENSOR;
 		Task_sleep(10);
@@ -347,7 +347,7 @@ Int main()
 	/* create a Mailbox Instance */
 	Mailbox_Params_init(&mbxParams);
 	mbxParams.readerEvent = evt;
-	mbxParams.readerEventId = Event_Id_01;
+	mbxParams.readerEventId = Event_Id_05;
 	mbx = Mailbox_create((sizeof(uint32_t)), 1, &mbxParams, NULL);
 
 

@@ -22,7 +22,7 @@ bool controlEjector(bool extend, bool secureMovement);
 /* Enable/Disable air slider: Pass bool value as a parameter true=enable, false=disable */
 void controlAirSlider(bool enable);
 /* Enable/Disable movements: Pass bool value as a parameter true=enable, false=disable */
-void controlMovements(bool enable);
+bool toggleEnableMovement();
 /* Sense Workpiece */
 bool senseWorkpiece();
 /* Sense Safety Barrier */

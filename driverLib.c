@@ -93,9 +93,16 @@ void controlAirSlider(bool enable) {
 }
 
 /* Enable/Disable movements: Pass bool value as a parameter true=enable, false=disable */
-void controlMovements(bool enable) {
-	enableMovement = enable;
-	qut_set_gpio (3, 0);
+bool toggleEnableMovement() {
+	if (enableMovement) {
+		qut_set_gpio (0, 0);
+		qut_set_gpio (1, 0);
+		qut_set_gpio (3, 0);
+		enableMovement = false;
+	} else {
+		enableMovement = true;
+	}
+	return enableMovement;
 }
 
 /* Sense Workpiece */
