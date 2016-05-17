@@ -12,6 +12,9 @@ bool init() {
 
 /* Init Station, bring everything in a normal position (by caling the other functions) */
 bool initStation() {
+	if (!enableMovement) {
+		return false;
+	}
 	bool success = true;
 	success &= movePlatform(false, false);
 	success &= controlEjector(false, false);
@@ -20,6 +23,9 @@ bool initStation() {
 
 /* Move Platform: Pass bool value as a parameter true=moveUp, false=moveDown */
 bool movePlatform(bool up, bool secureMovement) {
+	if (!enableMovement) {
+		return false;
+	}
 	while (secureMovement && qut_get_gpio(2)) {
 		if (!enableMovement) {
 			return false;
@@ -59,6 +65,9 @@ bool movePlatform(bool up, bool secureMovement) {
 
 /* Control the ejector: Pass bool value as a parameter true=extend, false=retract */
 bool controlEjector(bool extend, bool secureMovement) {
+	if (!enableMovement) {
+		return false;
+	}
 	while (secureMovement && qut_get_gpio(2)) {
 		if (!enableMovement) {
 			return false;
