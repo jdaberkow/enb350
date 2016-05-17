@@ -9,7 +9,7 @@ struct ColorMaterial {
 	bool black; 	/*true = orange, false = black*/
 };
 
-bool enableMovement;
+bool movement;
 
 /* Initialize all datastructures */
 bool init();
@@ -21,8 +21,10 @@ bool movePlatform(bool up, bool secureMovement);
 bool controlEjector(bool extend, bool secureMovement);
 /* Enable/Disable air slider: Pass bool value as a parameter true=enable, false=disable */
 void controlAirSlider(bool enable);
-/* Enable/Disable movements: Pass bool value as a parameter true=enable, false=disable */
+/* Toggle movement enable: Returns current state of enableMovement*/
 bool toggleEnableMovement();
+/* Enable/Disable movements: Pass bool value as a parameter true=enable, false=disable */
+void enableMovement(bool enable);
 /* Sense Workpiece */
 bool senseWorkpiece();
 /* Sense Safety Barrier */

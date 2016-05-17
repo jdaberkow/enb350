@@ -6,13 +6,13 @@
 
 /* Initialize all datastructures */
 bool init() {
-	enableMovement = false;
+	movement = false;
 	return true;
 }
 
 /* Init Station, bring everything in a normal position (by caling the other functions) */
 bool initStation() {
-	if (!enableMovement) {
+	if (!movement) {
 		return false;
 	}
 	bool success = true;
@@ -23,11 +23,11 @@ bool initStation() {
 
 /* Move Platform: Pass bool value as a parameter true=moveUp, false=moveDown */
 bool movePlatform(bool up, bool secureMovement) {
-	if (!enableMovement) {
+	if (!movement) {
 		return false;
 	}
 	while (secureMovement && qut_get_gpio(2)) {
-		if (!enableMovement) {
+		if (!movement) {
 			return false;
 		}
 		Task_sleep(5);
@@ -36,7 +36,7 @@ bool movePlatform(bool up, bool secureMovement) {
 		qut_set_gpio (0, 0);
 		qut_set_gpio (1, 1);
 		while (!qut_get_gpio(4)) {
-			if (!enableMovement) {
+			if (!movement) {
 				qut_set_gpio (1, 0);
 				return false;
 			}
@@ -52,7 +52,7 @@ bool movePlatform(bool up, bool secureMovement) {
 			if (qut_get_gpio(5)) {
 				counter++;
 			}
-			if (!enableMovement) {
+			if (!movement) {
 				qut_set_gpio (0, 0);
 				return false;
 			}
@@ -65,11 +65,11 @@ bool movePlatform(bool up, bool secureMovement) {
 
 /* Control the ejector: Pass bool value as a parameter true=extend, false=retract */
 bool controlEjector(bool extend, bool secureMovement) {
-	if (!enableMovement) {
+	if (!movement) {
 		return false;
 	}
 	while (secureMovement && qut_get_gpio(2)) {
-		if (!enableMovement) {
+		if (!movement) {
 			return false;
 		}
 		Task_sleep(5);
@@ -77,7 +77,7 @@ bool controlEjector(bool extend, bool secureMovement) {
 	if (extend) {
 		qut_set_gpio (2, 1);
 		/*while (qut_get_gpio(6)) {
-			if (!enableMovement) {
+			if (!movement) {
 				qut_set_gpio (2, 0);
 				return false;
 			}
@@ -87,7 +87,7 @@ bool controlEjector(bool extend, bool secureMovement) {
 	else {
 		qut_set_gpio (2, 0);
 		/*while (!qut_get_gpio(6)){
-			if (!enableMovement) {
+			if (!movement) {
 				return false;
 			}
 			Task_sleep(5);
@@ -103,15 +103,27 @@ void controlAirSlider(bool enable) {
 
 /* Enable/Disable movements: Pass bool value as a parameter true=enable, false=disable */
 bool toggleEnableMovement() {
-	if (enableMovement) {
+	if (movement) {
 		qut_set_gpio (0, 0);
 		qut_set_gpio (1, 0);
 		qut_set_gpio (3, 0);
-		enableMovement = false;
+		movement = false;
 	} else {
-		enableMovement = true;
+		movement = true;
 	}
-	return enableMovement;
+	return movement;
+}
+
+/* Enable/Disable movements: Pass bool value as a parameter true=enable, false=disable */
+void enableMovement(bool enable) {
+	if (enable) {
+		movement = true;
+	} else {
+		qut_set_gpio (0, 0);
+		qut_set_gpio (1, 0);
+		qut_set_gpio (3, 0);
+		movement = false;
+	}
 }
 
 /* Sense Workpiece */
