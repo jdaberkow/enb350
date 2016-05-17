@@ -138,6 +138,7 @@ Void taskEventHandler(UArg a0, UArg a1)
 			else if (festoData.screenState == THRESHOLD) {
 				festoData.screenState = CALIBRATE;
 			}
+			Event_post(evt, Event_Id_06);
 		}
 		if (posted & Event_Id_02) {
 			if (festoData.screenState == STATUS_SCREEN) {
@@ -149,11 +150,12 @@ Void taskEventHandler(UArg a0, UArg a1)
 			else if (festoData.screenState == THRESHOLD){
 				festoData.screenState = STATUS_SCREEN;
 			}
+			Event_post(evt, Event_Id_06);
 		}
 		if (posted & Event_Id_03) {
-			toggleEnableMovement();
+			festoData.enableMovement = toggleEnableMovement();
+			Event_post(evt, Event_Id_06);
 		}
-
 		Task_sleep(10);
 	}
 
@@ -483,6 +485,7 @@ Int main()
 	festoData.countBlack      = 0;
 	festoData.thresholdTop    = 260;
 	festoData.thresholdBottom = 240;
+	festoData.enableMovement  = false;
 
 	//Initialize the screen
 	initScreen(&festoData);

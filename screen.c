@@ -108,6 +108,9 @@ void updateScreen() {
 	/* Draw the calendar time*/
 	drawTime();
 
+	/* Draw start/stop button*/
+	drawToggle();
+
 	/* Draw the screen depending on the status we are in */
 	switch (festoData->screenState) {
 		case STATUS_SCREEN:
@@ -219,9 +222,19 @@ void drawThresholdScreen() {
 }
 
 void drawTime() {
-	ltm = localtime(&festoData->theTime);
+	ltm = localtime(&(festoData->theTime));
 	curTime = asctime(ltm);
 	GrStringDrawCentered(&timeContext, curTime, 24, 160, 30, 0);
+}
+
+void drawToggle() {
+	if (festoData->enableMovement) {
+		GrStringDrawCentered(&sContext, "STOP", -1, 280, 200, 0);
+	}
+	else {
+		GrStringDrawCentered(&sContext, "START", -1, 280, 200, 0);
+	}
+
 }
 
 void clearScreen()

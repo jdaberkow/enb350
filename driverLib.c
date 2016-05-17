@@ -6,7 +6,7 @@
 
 /* Initialize all datastructures */
 bool init() {
-	enableMovement = true;
+	enableMovement = false;
 	return true;
 }
 
