@@ -83,7 +83,7 @@ float latestHeight = 0.0;
 float slope = 0.1091107474;
 float offset = 29.00981997;
 
-festoData_type festoData;
+festoData_type festoDataObject;
 
 //*****************************************************************************
 //
@@ -124,36 +124,36 @@ Void taskEventHandler(UArg a0, UArg a1)
 			Event_Id_00 + Event_Id_01 + Event_Id_02 + Event_Id_03,   /* orMask */
 			BIOS_NO_WAIT);
 		if (posted & Event_Id_00) {
-			festoData.theTime = time(NULL);
-			festoData.operatingTime = time(NULL) - STARTING_TIME + 1;
+			festoDataObject.theTime = time(NULL);
+			festoDataObject.operatingTime = time(NULL) - STARTING_TIME + 1;
 			Event_post(evt, Event_Id_06);
 		}
 		if (posted & Event_Id_01) {
-			if (festoData.screenState == STATUS_SCREEN) {
-				festoData.screenState = CALIBRATE;
+			if (festoDataObject.screenState == STATUS_SCREEN) {
+				festoDataObject.screenState = CALIBRATE;
 			}
-			else if (festoData.screenState == CALIBRATE) {
-				festoData.screenState = STATUS_SCREEN;
+			else if (festoDataObject.screenState == CALIBRATE) {
+				festoDataObject.screenState = STATUS_SCREEN;
 			}
-			else if (festoData.screenState == THRESHOLD) {
-				festoData.screenState = CALIBRATE;
+			else if (festoDataObject.screenState == THRESHOLD) {
+				festoDataObject.screenState = CALIBRATE;
 			}
 			Event_post(evt, Event_Id_06);
 		}
 		if (posted & Event_Id_02) {
-			if (festoData.screenState == STATUS_SCREEN) {
-				festoData.screenState = THRESHOLD;
+			if (festoDataObject.screenState == STATUS_SCREEN) {
+				festoDataObject.screenState = THRESHOLD;
 			}
-			else if (festoData.screenState == CALIBRATE) {
-				festoData.screenState = THRESHOLD;
+			else if (festoDataObject.screenState == CALIBRATE) {
+				festoDataObject.screenState = THRESHOLD;
 			}
-			else if (festoData.screenState == THRESHOLD){
-				festoData.screenState = STATUS_SCREEN;
+			else if (festoDataObject.screenState == THRESHOLD){
+				festoDataObject.screenState = STATUS_SCREEN;
 			}
 			Event_post(evt, Event_Id_06);
 		}
 		if (posted & Event_Id_03) {
-			festoData.enableMovement = toggleEnableMovement();
+			festoDataObject.enableMovement = toggleEnableMovement();
 			Event_post(evt, Event_Id_06);
 		}
 		Task_sleep(10);
@@ -188,22 +188,22 @@ Void taskUpdateScreen(UArg a0, UArg a1)
 
 bool checkWorkpiece() {
 	if (latestColorMaterial.black) {
-		festoData.currentColor = BLACK;
-		festoData.countBlack++;
+		festoDataObject.currentColor = BLACK;
+		festoDataObject.countBlack++;
 	} else {
-		festoData.currentColor = NON_BLACK;
+		festoDataObject.currentColor = NON_BLACK;
 	}
 	if (latestColorMaterial.metallic) {
-		festoData.currentMaterial = METALLIC;
-		festoData.countMetallic++;
+		festoDataObject.currentMaterial = METALLIC;
+		festoDataObject.countMetallic++;
 	} else {
-		festoData.currentMaterial = NON_METALLIC;
+		festoDataObject.currentMaterial = NON_METALLIC;
 	}
-	festoData.currentHeight = latestHeight;
-	festoData.countTotal++;
+	festoDataObject.currentHeight = latestHeight;
+	festoDataObject.countTotal++;
 
-	if (festoData.thresholdBottom <= latestHeight && festoData.thresholdTop >= latestHeight) {
-		festoData.countAccepted++;
+	if (festoDataObject.thresholdBottom <= latestHeight && festoDataObject.thresholdTop >= latestHeight) {
+		festoDataObject.countAccepted++;
 		return true;
 	}
 	return false;
@@ -472,23 +472,23 @@ Int main()
 	// Initialize an Event Instance
 	evt = Event_create(NULL, NULL);
 
-	// Initialize the festoData struct
-	festoData.theTime         = time(NULL);
-	festoData.operatingTime   = 0;
-	festoData.screenState     = STATUS_SCREEN;
-	festoData.currentMaterial = UNKNOWN_MATERIAL;
-	festoData.currentColor    = UNKNOWN_COLOR;
-	festoData.currentHeight   = 0;
-	festoData.countTotal      = 0;
-	festoData.countAccepted   = 0;
-	festoData.countMetallic   = 0;
-	festoData.countBlack      = 0;
-	festoData.thresholdTop    = 260;
-	festoData.thresholdBottom = 240;
-	festoData.enableMovement  = false;
+	// Initialize the festoDataObject struct
+	festoDataObject.theTime         = time(NULL);
+	festoDataObject.operatingTime   = 0;
+	festoDataObject.screenState     = STATUS_SCREEN;
+	festoDataObject.currentMaterial = UNKNOWN_MATERIAL;
+	festoDataObject.currentColor    = UNKNOWN_COLOR;
+	festoDataObject.currentHeight   = 0;
+	festoDataObject.countTotal      = 0;
+	festoDataObject.countAccepted   = 0;
+	festoDataObject.countMetallic   = 0;
+	festoDataObject.countBlack      = 0;
+	festoDataObject.thresholdTop    = 260;
+	festoDataObject.thresholdBottom = 240;
+	festoDataObject.enableMovement  = false;
 
 	//Initialize the screen
-	initScreen(&festoData);
+	initScreen(&festoDataObject);
 
     BIOS_start();    /* does not return */
     return(0);

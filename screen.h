@@ -11,7 +11,6 @@ typedef enum {BLACK, NON_BLACK, UNKNOWN_COLOR} color_type;
 
 typedef struct
 {
-	 screenState_type screenStateDummy;
 	 time_t theTime;
 	 uint32_t operatingTime;
 	 screenState_type screenState;
