@@ -1,5 +1,7 @@
 #include <screen.h>
 
+#include <xdc/runtime/System.h>
+
 #include "grlib/grlib.h"
 
 #include "driverlib/sysctl.h"
@@ -13,6 +15,7 @@ tContext 	    timeContext;
 tContext 	    mediumContext;
 tContext 	    ttContext;
 tContext 	    ttGrayContext;
+tContext 	    buttonContext;
 tContext 	    clearingContext;
 uint32_t 	    ui32SysClock;
 festoData_type *festoData;
@@ -80,6 +83,7 @@ void initScreen(festoData_type *pFestoData) {
 	GrContextInit(&mediumContext, &g_sKentec320x240x16_SSD2119);
 	GrContextInit(&ttContext, &g_sKentec320x240x16_SSD2119);
 	GrContextInit(&ttGrayContext, &g_sKentec320x240x16_SSD2119);
+	GrContextInit(&buttonContext, &g_sKentec320x240x16_SSD2119);
 	GrContextInit(&clearingContext, &g_sKentec320x240x16_SSD2119);
 
 	//
@@ -90,6 +94,7 @@ void initScreen(festoData_type *pFestoData) {
 	FrameDraw(&mediumContext,   "Festo Station");
 	FrameDraw(&ttContext,       "Festo Station");
 	FrameDraw(&ttGrayContext,   "Festo Station");
+	FrameDraw(&buttonContext,   "Festo Station");
 	FrameDraw(&clearingContext, "Festo Station");
 
 	GrContextFontSet(&sContext, &g_sFontCm14);
@@ -97,6 +102,7 @@ void initScreen(festoData_type *pFestoData) {
 	GrContextFontSet(&mediumContext, &g_sFontCmsc14);
 	GrContextFontSet(&ttContext, &g_sFontCm14);
 	GrContextFontSet(&ttGrayContext, &g_sFontCm14);
+	GrContextFontSet(&buttonContext, &g_sFontCmsc16);
 	GrContextForegroundSet(&ttGrayContext, ClrLightGrey);
 	GrContextForegroundSet(&clearingContext, ClrBlack);
 }
@@ -208,31 +214,41 @@ void drawStatusScreen() {
 
 
 	/* Draw the hardware button labels*/
+	GrStringDraw(&buttonContext, "< CALIBRATE", -1, 10, 160, 0);
+	GrStringDraw(&buttonContext, "< THRESHOLD", -1, 10, 214, 0);
 
 
 	/* Call the API function that copies the buffer to the screen*/
 }
 
 void drawCalibrateScreen() {
-	GrStringDraw(&sContext, "CALIBRATE", -1, 170, 153, 0);
+	GrStringDrawCentered(&buttonContext, "CALIBRATION", -1, 160, 50, 0);
+
+	/* Draw the hardware button labels*/
+	GrStringDraw(&buttonContext, "< STATUS", -1, 10, 160, 0);
+	GrStringDraw(&buttonContext, "< THRESHOLD", -1, 10, 214, 0);
 }
 
 void drawThresholdScreen() {
-	GrStringDraw(&sContext, "THRESHOLD", -1, 170, 153, 0);
+	GrStringDrawCentered(&buttonContext, "THRESHOLD", -1, 160, 50, 0);
+
+	/* Draw the hardware button labels*/
+	GrStringDraw(&buttonContext, "< CALIBRATE", -1, 10, 160, 0);
+	GrStringDraw(&buttonContext, "< STATUS", -1, 10, 214, 0);
 }
 
 void drawTime() {
-	ltm = localtime(&(festoData->theTime));
+	ltm = localtime(&festoData->theTime);
 	curTime = asctime(ltm);
 	GrStringDrawCentered(&timeContext, curTime, 24, 160, 30, 0);
 }
 
 void drawToggle() {
 	if (festoData->enableMovement) {
-		GrStringDrawCentered(&sContext, "STOP", -1, 280, 200, 0);
+		GrStringDrawCentered(&buttonContext, "STOP >", -1, 280, 221, 0);
 	}
 	else {
-		GrStringDrawCentered(&sContext, "START", -1, 280, 200, 0);
+		GrStringDrawCentered(&buttonContext, "START >", -1, 273, 221, 0);
 	}
 
 }

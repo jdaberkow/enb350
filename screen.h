@@ -32,6 +32,7 @@ void updateScreen();
 void drawStatusScreen();
 void drawCalibrateScreen();
 void drawThresholdScreen();
+void drawTime();
 void drawToggle();
 void clearScreen();
 
