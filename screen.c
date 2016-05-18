@@ -4,6 +4,8 @@
 
 #include "grlib/grlib.h"
 
+#include "inc/tm4c129xnczad.h"
+
 #include "driverlib/sysctl.h"
 #include "drivers/kentec320x240x16_ssd2119.h"
 #include "drivers/frame.h"
@@ -33,6 +35,8 @@ char stringRuntime [12];
 char stringThroughput [10];
 char stringThresholdBottom [10];
 char stringThresholdTop [10];
+char stringCalibrateFirst [10];
+char stringCalibrateSecond [10];
 
 static const tRectangle sRect =
     {
@@ -242,23 +246,35 @@ void drawStatusScreen() {
 void drawCalibrateScreen() {
 	GrStringDrawCentered(&buttonContext, "CALIBRATION", -1, 160, 50, 0);
 
+	GrStringDrawCentered(&mediumContext, "First", -1, 85, 75, 0);
+	usprintf(stringCalibrateFirst, "%i.%i mm", festoData->calibrateFirst/10, festoData->calibrateFirst%10);
+	GrStringDrawCentered(&ttBigContext, stringCalibrateFirst, -1, 85, 100, 0);
+
+	GrStringDrawCentered(&mediumContext, "Second", -1, 235, 75, 0);
+	usprintf(stringCalibrateSecond, "%i.%i mm", festoData->calibrateSecond/10, festoData->calibrateSecond%10);
+	GrStringDrawCentered(&ttBigContext, stringCalibrateSecond, -1, 235, 100, 0);
+
 	switch (festoData->calibrateState) {
 		case REVIEW_C:
 			if (!festoData->measuring) {
 				GrStringDraw(&buttonContext, "< STATUS", -1, 10, 160, 0);
 				GrStringDraw(&buttonContext, "< THRESHOLD", -1, 10, 214, 0);
-				GrStringDrawCentered(&buttonContext, "CALIBRATE >", -1, 273, 221, 0);
+				GrStringDrawCentered(&buttonContext, "CALIBRATE >", -1, 252, 221, 0);
 			}
 			break;
 		case FIRST_VALUE:
 			GrStringDraw(&buttonContext, "< UP", -1, 10, 160, 0);
 			GrStringDraw(&buttonContext, "< DOWN", -1, 10, 214, 0);
+
+			GrRectDraw(&mediumContext, &thresholdBottomRect);
 			if (!festoData->measuring)
 				GrStringDrawCentered(&buttonContext, "APPLY >", -1, 273, 221, 0);
 			break;
 		case SECOND_VALUE:
 			GrStringDraw(&buttonContext, "< UP", -1, 10, 160, 0);
 			GrStringDraw(&buttonContext, "< DOWN", -1, 10, 214, 0);
+
+			GrRectDraw(&mediumContext, &thresholdTopRect);
 			if (!festoData->measuring)
 				GrStringDrawCentered(&buttonContext, "APPLY >", -1, 273, 221, 0);
 			break;
@@ -282,7 +298,7 @@ void drawThresholdScreen() {
 		case REVIEW_T:
 			GrStringDraw(&buttonContext, "< CALIBRATE", -1, 10, 160, 0);
 			GrStringDraw(&buttonContext, "< STATUS", -1, 10, 214, 0);
-			GrStringDrawCentered(&buttonContext, "ADJUST >", -1, 273, 221, 0);
+			GrStringDrawCentered(&buttonContext, "ADJUST >", -1, 270, 221, 0);
 			break;
 		case ADJUST_BOTTOM:
 			GrStringDraw(&buttonContext, "< UP", -1, 10, 160, 0);
@@ -316,10 +332,25 @@ void drawToggle() {
 	else {
 		GrStringDrawCentered(&buttonContext, "START >", -1, 273, 221, 0);
 	}
-
 }
 
-void clearScreen()
-{
+void clearScreen() {
     GrRectFill(&clearingContext, &sRect);
+}
+
+void updateLED() {
+	if (festoData->enableMovement) {
+		if (festoData->calibrateState != REVIEW_C || festoData->measuring) {
+			GPIO_PORTQ_DATA_R |= 0x80;		//enable Green LED
+			GPIO_PORTN_DATA_R |= 0x20;		//enable Red LED
+		}
+		else {
+			GPIO_PORTQ_DATA_R |= 0x80;		//enable Green LED
+			GPIO_PORTN_DATA_R &= ~(0x20);	//disable Red LED
+		}
+	}
+	else {
+		GPIO_PORTQ_DATA_R &= ~(0x80);	//disable Green LED
+		GPIO_PORTN_DATA_R |= 0x20;		//enable Red LED
+	}
 }

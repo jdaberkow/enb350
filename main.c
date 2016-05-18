@@ -133,8 +133,23 @@ Void taskEventHandler(UArg a0, UArg a1)
 				festoDataObject.screenState = CALIBRATE;
 			}
 			else if (festoDataObject.screenState == CALIBRATE) {
-				festoDataObject.screenState = STATUS_SCREEN;
-				//TODO
+				switch (festoDataObject.calibrateState) {
+					case REVIEW_C:
+						if (!festoDataObject.measuring) {
+							festoDataObject.screenState = STATUS_SCREEN;
+						}
+						break;
+					case FIRST_VALUE:
+						if (festoDataObject.calibrateFirst <= 495)
+							festoDataObject.calibrateFirst += 5;
+						break;
+					case SECOND_VALUE:
+						if (festoDataObject.calibrateSecond <= 495)
+							festoDataObject.calibrateSecond += 5;
+						break;
+					default:
+						break;
+				}
 			}
 			else if (festoDataObject.screenState == THRESHOLD) {
 				switch (festoDataObject.thresholdState) {
@@ -160,8 +175,23 @@ Void taskEventHandler(UArg a0, UArg a1)
 				festoDataObject.screenState = THRESHOLD;
 			}
 			else if (festoDataObject.screenState == CALIBRATE) {
-				festoDataObject.screenState = THRESHOLD;
-				//TODO
+				switch (festoDataObject.calibrateState) {
+					case REVIEW_C:
+						if (!festoDataObject.measuring) {
+							festoDataObject.screenState = THRESHOLD;
+						}
+						break;
+					case FIRST_VALUE:
+						if (festoDataObject.calibrateFirst >= 5)
+							festoDataObject.calibrateFirst -= 5;
+						break;
+					case SECOND_VALUE:
+						if (festoDataObject.calibrateSecond >= 5)
+							festoDataObject.calibrateSecond -= 5;
+						break;
+					default:
+						break;
+				}
 			}
 			else if (festoDataObject.screenState == THRESHOLD){
 				switch (festoDataObject.thresholdState) {
@@ -197,13 +227,15 @@ Void taskEventHandler(UArg a0, UArg a1)
 							break;
 						case FIRST_VALUE:
 							if (!festoDataObject.measuring) {
-								Mailbox_post(mbx, 225, BIOS_WAIT_FOREVER);
+								festoDataObject.measuring = true;
+								Event_post(evt, Event_Id_05);
 								festoDataObject.calibrateState = SECOND_VALUE;
 							}
 							break;
 						case SECOND_VALUE:
 							if (!festoDataObject.measuring) {
-								Mailbox_post(mbx, 275, BIOS_WAIT_FOREVER);
+								festoDataObject.measuring = true;
+								Event_post(evt, Event_Id_05);
 								festoDataObject.calibrateState = REVIEW_C;
 							}
 							break;
@@ -256,6 +288,7 @@ Void taskUpdateScreen(UArg a0, UArg a1)
 			BIOS_NO_WAIT);
 		if (posted & Event_Id_06) {
 			updateScreen();
+			updateLED();
 		}
 
 		Task_sleep(10);
@@ -289,6 +322,8 @@ bool checkWorkpiece() {
 void calibrateSensor() {
 	uint32_t height[2];
 	uint32_t heightReference[2];
+	enableMovement(true);
+	festoDataObject.enableMovement = true;
 	for (int i = 0; i < 2; i++) {
 		festoDataObject.measuring = true;
 		movePlatform(false, true);
@@ -306,12 +341,13 @@ void calibrateSensor() {
 			Task_sleep(5);
 		}
 
-		festoDataObject.measuring = true;
 		movePlatform(true, true);
 		Task_sleep(500);
 		height[i] = getRawWorkpieceHeight();
-		while (!Mailbox_pend(mbx, &heightReference[i], BIOS_NO_WAIT)) { //TODO kann sein dass das einfach an ner anderen Stelle noch gemacht werden muss...
-			Task_sleep(5);
+		if (i = 0) {
+			heightReference[i] = festoDataObject.calibrateFirst;
+		} else {
+			heightReference[i] = festoDataObject.calibrateSecond;
 		}
 		festoDataObject.measuring = false;
 	}
@@ -325,12 +361,12 @@ void calibrateSensor() {
 		biggerReference = heightReference[1];
 		smaller = height[0];
 		bigger = height[1];
-	} else {
+	} else if (heightReference[0] > heightReference[1]){
 		smallerReference = heightReference[1];
 		biggerReference = heightReference[0];
 		smaller = height[1];
 		bigger = height[0];
-	}
+	} else return;
 
 	slope = (biggerReference - smallerReference) / (bigger - smaller);
 	offset = smallerReference - (slope * smaller);
@@ -423,7 +459,7 @@ Void taskStateMachine(UArg a0, UArg a1) {
 					Event_Id_NONE, 				/* andMask */
 					Event_Id_04,  				/* orMask */
 					BIOS_NO_WAIT);
-		if (posted & Event_Id_02) currentState = CALIBRATE_SENSOR;
+		if (posted & Event_Id_04) currentState = CALIBRATE_SENSOR;
 		Task_sleep(10);
 	}
 }
@@ -432,25 +468,36 @@ void IntUpButton(void)
 {
 	GPIOIntClear(GPIO_PORTN_BASE, GPIO_INT_PIN_3);
 
-	/* Explicit posting of Event_Id_00 by calling Event_post() */
-	Event_post(evt, Event_Id_01);
+	uint32_t currentTicks = Clock_getTicks();
 
+	if (currentTicks - ticksUpButton > 200) {
+		ticksUpButton = currentTicks;
+		Event_post(evt, Event_Id_01);
+	}
 }
 
 void IntDownButton(void)
 {
 	GPIOIntClear(GPIO_PORTE_BASE, GPIO_INT_PIN_5);
 
-	/* Explicit posting of Event_Id_00 by calling Event_post() */
-	Event_post(evt, Event_Id_02);
+	uint32_t currentTicks = Clock_getTicks();
+
+	if (currentTicks - ticksDownButton > 200) {
+		ticksDownButton = currentTicks;
+		Event_post(evt, Event_Id_02);
+	}
 }
 
 void IntSelectButton(void)
 {
 	GPIOIntClear(GPIO_PORTP_BASE, GPIO_INT_PIN_1);
 
-	/* Explicit posting of Event_Id_00 by calling Event_post() */
-	Event_post(evt, Event_Id_03);
+	uint32_t currentTicks = Clock_getTicks();
+
+	if (currentTicks - ticksSelectButton > 200) {
+		ticksSelectButton = currentTicks;
+		Event_post(evt, Event_Id_03);
+	}
 }
 
 /*
@@ -569,6 +616,8 @@ Int main()
 	festoDataObject.countBlack      = 0;
 	festoDataObject.thresholdTop    = 260;
 	festoDataObject.thresholdBottom = 240;
+	festoDataObject.calibrateFirst  = 225;
+	festoDataObject.calibrateSecond = 275;
 	festoDataObject.enableMovement  = false;
 	festoDataObject.measuring       = false;
 

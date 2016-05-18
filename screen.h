@@ -27,6 +27,8 @@ typedef struct
 	 uint32_t countBlack;
 	 uint32_t thresholdTop;
 	 uint32_t thresholdBottom;
+	 uint32_t calibrateFirst;
+	 uint32_t calibrateSecond;
 	 bool enableMovement;
 	 bool measuring;
 } festoData_type;
@@ -39,5 +41,6 @@ void drawThresholdScreen();
 void drawTime();
 void drawToggle();
 void clearScreen();
+void updateLED();
 
 #endif /* SCREEN_H_ */
