@@ -344,7 +344,7 @@ void calibrateSensor() {
 		movePlatform(true, true);
 		Task_sleep(500);
 		height[i] = getRawWorkpieceHeight();
-		if (i = 0) {
+		if (i == 0) {
 			heightReference[i] = festoDataObject.calibrateFirst;
 		} else {
 			heightReference[i] = festoDataObject.calibrateSecond;
