@@ -449,6 +449,7 @@ Void taskStateMachine(UArg a0, UArg a1) {
 				break;
 			case CALIBRATE_SENSOR:
 				calibrateSensor();
+				currentState = CHECK_WORKPIECE;
 				break;
 			default:
 			    System_printf("Case Default\n");
@@ -580,6 +581,14 @@ Int main()
 	GPIOIntRegister(GPIO_PORTE_BASE, IntDownButton);
 	GPIOIntRegister(GPIO_PORTN_BASE, IntUpButton);
 	GPIOIntRegister(GPIO_PORTP_BASE, IntSelectButton);
+	/* TODO:
+	 * Add Interrupt Registrations for the Sensor Interrupts.
+	 * 1) Up Sensor
+	 * 2) Down Sensor
+	 * In the ISRs stop movement of the platform immediately.
+	 * And send an event which can be received by the driverlib.
+	 * Maybe also introduce bool values to indicate platform position.
+	 */
 
 	//Initialize the UART
 	QUT_UART_Init( ui32SysClock );

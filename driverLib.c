@@ -33,6 +33,7 @@ bool movePlatform(bool up, bool secureMovement) {
 		Task_sleep(5);
 	}
 	if (up) {
+		if (qut_get_gpio(4)) return true;
 		qut_set_gpio (0, 0);
 		qut_set_gpio (1, 1);
 		while (!qut_get_gpio(4)) {
@@ -40,15 +41,23 @@ bool movePlatform(bool up, bool secureMovement) {
 				qut_set_gpio (1, 0);
 				return false;
 			}
-			Task_sleep(5);
+			Task_sleep(1);
 		}
 		qut_set_gpio (1, 0);
 	}
 	else {
+		if (qut_get_gpio(5)) return true;
 		qut_set_gpio (0, 1);
 		qut_set_gpio (1, 0);
 		int32_t counter = 0;
-		while (counter < 100) {
+		while (!qut_get_gpio(5)) {
+			if (!movement) {
+				qut_set_gpio (0, 0);
+				return false;
+			}
+			Task_sleep(1);
+		}
+		/*while (counter < 1) {
 			if (qut_get_gpio(5)) {
 				counter++;
 			}
@@ -57,7 +66,7 @@ bool movePlatform(bool up, bool secureMovement) {
 				return false;
 			}
 			Task_sleep(5);
-		}
+		}*/
 		qut_set_gpio (0, 0);
 	}
 	return true;
