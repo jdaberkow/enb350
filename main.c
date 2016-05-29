@@ -465,15 +465,26 @@ Void taskStateMachine(UArg a0, UArg a1) {
 	}
 }
 
-void IntUpButton(void)
+void IntPortN(void)
 {
-	GPIOIntClear(GPIO_PORTN_BASE, GPIO_INT_PIN_3);
+	if (GPIOIntStatus(GPIO_PORTN_BASE, false) & GPIO_PIN_3)
+	{
+		// Up Button
+		GPIOIntClear(GPIO_PORTN_BASE, GPIO_INT_PIN_3);
 
-	uint32_t currentTicks = Clock_getTicks();
+		uint32_t currentTicks = Clock_getTicks();
 
-	if (currentTicks - ticksUpButton > 200) {
-		ticksUpButton = currentTicks;
-		Event_post(evt, Event_Id_01);
+		if (currentTicks - ticksUpButton > 200) {
+			ticksUpButton = currentTicks;
+			Event_post(evt, Event_Id_01);
+		}
+	}
+	if (GPIOIntStatus(GPIO_PORTN_BASE, false) & GPIO_INT_PIN_4)
+	{
+		// Platform Raised
+		GPIOIntClear(GPIO_PORTN_BASE, GPIO_INT_PIN_4);
+		qut_set_gpio(1, 0);
+		Event_post(evt, Event_Id_07);
 	}
 }
 
@@ -499,6 +510,13 @@ void IntSelectButton(void)
 		ticksSelectButton = currentTicks;
 		Event_post(evt, Event_Id_03);
 	}
+}
+
+void IntLoweredPositionSensor(void)
+{
+	GPIOIntClear(GPIO_PORTA_BASE, GPIO_INT_PIN_7);
+	qut_set_gpio(0, 0);
+	Event_post(evt, Event_Id_08);
 }
 
 /*
@@ -573,14 +591,19 @@ Int main()
 	GPIOIntEnable(GPIO_PORTE_BASE, GPIO_INT_PIN_5);
 	GPIOIntEnable(GPIO_PORTN_BASE, GPIO_INT_PIN_3);
 	GPIOIntEnable(GPIO_PORTP_BASE, GPIO_INT_PIN_1);
+	GPIOIntEnable(GPIO_PORTN_BASE, GPIO_INT_PIN_4);
+	GPIOIntEnable(GPIO_PORTA_BASE, GPIO_INT_PIN_7);
 
 	GPIOIntTypeSet(GPIO_PORTE_BASE, GPIO_INT_PIN_5, GPIO_FALLING_EDGE);
 	GPIOIntTypeSet(GPIO_PORTN_BASE, GPIO_INT_PIN_3, GPIO_FALLING_EDGE);
 	GPIOIntTypeSet(GPIO_PORTP_BASE, GPIO_INT_PIN_1, GPIO_FALLING_EDGE);
+	GPIOIntTypeSet(GPIO_PORTN_BASE, GPIO_INT_PIN_4, GPIO_RISING_EDGE);
+	GPIOIntTypeSet(GPIO_PORTA_BASE, GPIO_INT_PIN_7, GPIO_RISING_EDGE);
 
 	GPIOIntRegister(GPIO_PORTE_BASE, IntDownButton);
-	GPIOIntRegister(GPIO_PORTN_BASE, IntUpButton);
+	GPIOIntRegister(GPIO_PORTN_BASE, IntPortN);
 	GPIOIntRegister(GPIO_PORTP_BASE, IntSelectButton);
+	GPIOIntRegister(GPIO_PORTA_BASE, IntLoweredPositionSensor);
 	/* TODO:
 	 * Add Interrupt Registrations for the Sensor Interrupts.
 	 * 1) Up Sensor

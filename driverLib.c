@@ -4,9 +4,13 @@
 #include "qut_tiva.h"
 #include <ti/sysbios/knl/Task.h>
 
+Event_Handle evt;
+
 /* Initialize all datastructures */
 bool init() {
 	movement = false;
+	// Initialize an Event Instance
+	evt = Event_create(NULL, NULL);
 	return true;
 }
 
@@ -16,6 +20,11 @@ bool initStation() {
 		return false;
 	}
 	bool success = true;
+	qut_set_gpio(0, 1);
+	qut_set_gpio(1, 0);
+	Task_sleep(500);
+	qut_set_gpio(0, 0)
+	success &= movePlatform(true, false);
 	success &= movePlatform(false, false);
 	success &= controlEjector(false, false);
 	return success;
@@ -41,9 +50,14 @@ bool movePlatform(bool up, bool secureMovement) {
 				qut_set_gpio (1, 0);
 				return false;
 			}
-			Task_sleep(1);
+			UInt posted;
+			posted = Event_pend(evt,
+				Event_Id_NONE, 				/* andMask */
+				Event_Id_07,  				/* orMask */
+				BIOS_NO_WAIT);
+			if (posted & Event_Id_07) return true;
+			Task_sleep(10);
 		}
-		qut_set_gpio (1, 0);
 	}
 	else {
 		if (qut_get_gpio(5)) return true;
@@ -55,19 +69,14 @@ bool movePlatform(bool up, bool secureMovement) {
 				qut_set_gpio (0, 0);
 				return false;
 			}
-			Task_sleep(1);
+			UInt posted;
+			posted = Event_pend(evt,
+				Event_Id_NONE, 				/* andMask */
+				Event_Id_08,  				/* orMask */
+				BIOS_NO_WAIT);
+			if (posted & Event_Id_08) return true;
+			Task_sleep(10);
 		}
-		/*while (counter < 1) {
-			if (qut_get_gpio(5)) {
-				counter++;
-			}
-			if (!movement) {
-				qut_set_gpio (0, 0);
-				return false;
-			}
-			Task_sleep(5);
-		}*/
-		qut_set_gpio (0, 0);
 	}
 	return true;
 }
