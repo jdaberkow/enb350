@@ -52,7 +52,7 @@ bool movePlatform(bool up, bool secureMovement) {
 		platformDown = false;
 		qut_set_gpio (0, 0);
 		qut_set_gpio (1, 1);
-		while (!qut_get_gpio(4)) {
+		while (true) {
 			if (!movement) {
 				qut_set_gpio (1, 0);
 				return false;
@@ -75,7 +75,7 @@ bool movePlatform(bool up, bool secureMovement) {
 		qut_set_gpio (0, 1);
 		qut_set_gpio (1, 0);
 		int32_t counter = 0;
-		while (!qut_get_gpio(5)) {
+		while (true) {
 			if (!movement) {
 				qut_set_gpio (0, 0);
 				return false;
@@ -108,22 +108,10 @@ bool controlEjector(bool extend, bool secureMovement) {
 	}
 	if (extend) {
 		qut_set_gpio (2, 1);
-		/*while (qut_get_gpio(6)) {
-			if (!movement) {
-				qut_set_gpio (2, 0);
-				return false;
-			}
-		}*/
 		Task_sleep(500);
 	}
 	else {
 		qut_set_gpio (2, 0);
-		/*while (!qut_get_gpio(6)){
-			if (!movement) {
-				return false;
-			}
-			Task_sleep(5);
-		}*/
 		Task_sleep(500);
 	}
 	return true;

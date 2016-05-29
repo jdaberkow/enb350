@@ -323,6 +323,7 @@ void calibrateSensor() {
 	uint32_t height[2];
 	uint32_t heightReference[2];
 	enableMovement(true);
+	//initStation(); Just an idea! >D
 	festoDataObject.enableMovement = true;
 	for (int i = 0; i < 2; i++) {
 		festoDataObject.measuring = true;
@@ -351,6 +352,7 @@ void calibrateSensor() {
 		}
 		festoDataObject.measuring = false;
 	}
+	movePlatform(false, true);
 
 	float smaller;
 	float bigger;
@@ -449,7 +451,9 @@ Void taskStateMachine(UArg a0, UArg a1) {
 				break;
 			case CALIBRATE_SENSOR:
 				calibrateSensor();
-				currentState = CHECK_WORKPIECE;
+				enableMovement(false);
+				festoDataObject.enableMovement = false;
+				currentState = INIT_STATION;
 				break;
 			default:
 			    System_printf("Case Default\n");
