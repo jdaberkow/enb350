@@ -3,14 +3,20 @@
 #include "driverLib.h"
 #include "qut_tiva.h"
 #include <ti/sysbios/knl/Task.h>
+#include <ti/sysbios/knl/Event.h>
+#include <ti/sysbios/BIOS.h>
 
 Event_Handle evt;
+bool platformUp;
+bool platformDown;
 
 /* Initialize all datastructures */
 bool init() {
 	movement = false;
 	// Initialize an Event Instance
 	evt = Event_create(NULL, NULL);
+	platformUp = false;
+	platformDown = false;
 	return true;
 }
 
@@ -23,7 +29,7 @@ bool initStation() {
 	qut_set_gpio(0, 1);
 	qut_set_gpio(1, 0);
 	Task_sleep(500);
-	qut_set_gpio(0, 0)
+	qut_set_gpio(0, 0);
 	success &= movePlatform(true, false);
 	success &= movePlatform(false, false);
 	success &= controlEjector(false, false);
@@ -42,7 +48,8 @@ bool movePlatform(bool up, bool secureMovement) {
 		Task_sleep(5);
 	}
 	if (up) {
-		if (qut_get_gpio(4)) return true;
+		if (qut_get_gpio(4) || platformUp) return true;
+		platformDown = false;
 		qut_set_gpio (0, 0);
 		qut_set_gpio (1, 1);
 		while (!qut_get_gpio(4)) {
@@ -55,12 +62,16 @@ bool movePlatform(bool up, bool secureMovement) {
 				Event_Id_NONE, 				/* andMask */
 				Event_Id_07,  				/* orMask */
 				BIOS_NO_WAIT);
-			if (posted & Event_Id_07) return true;
+			if (posted & Event_Id_07) {
+				platformUp = true;
+				return true;
+			}
 			Task_sleep(10);
 		}
 	}
 	else {
-		if (qut_get_gpio(5)) return true;
+		if (qut_get_gpio(5) || platformDown) return true;
+		platformUp = false;
 		qut_set_gpio (0, 1);
 		qut_set_gpio (1, 0);
 		int32_t counter = 0;
@@ -74,7 +85,10 @@ bool movePlatform(bool up, bool secureMovement) {
 				Event_Id_NONE, 				/* andMask */
 				Event_Id_08,  				/* orMask */
 				BIOS_NO_WAIT);
-			if (posted & Event_Id_08) return true;
+			if (posted & Event_Id_08) {
+				platformDown = true;
+				return true;
+			}
 			Task_sleep(10);
 		}
 	}

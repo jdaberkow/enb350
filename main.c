@@ -69,7 +69,7 @@ typedef enum{
 	INIT,
 	INIT_STATION,
 	CHECK_WORKPIECE,
-	CKECK_SAFETY_BARRIER,
+	CHECK_SAFETY_BARRIER,
 	MEASURE_WORKPIECE,
 	ACCEPT_WORKPIECE,
 	REJECT_WORKPIECE,
@@ -396,10 +396,10 @@ Void taskStateMachine(UArg a0, UArg a1) {
 			case CHECK_WORKPIECE:
 			    System_printf("Case WORKPIECE\n");
 				if (senseWorkpiece()) {
-					currentState = CKECK_SAFETY_BARRIER;
+					currentState = CHECK_SAFETY_BARRIER;
 				}
 				break;
-			case CKECK_SAFETY_BARRIER:
+			case CHECK_SAFETY_BARRIER:
 			    System_printf("Case SAFTEY BARRIER\n");
 				if (senseSafetyBarrierClear()) {
 					currentState = MEASURE_WORKPIECE;
