@@ -423,7 +423,7 @@ Void taskStateMachine(UArg a0, UArg a1) {
 				}
 				break;
 			case ACCEPT_WORKPIECE:
-				System_printf("Case REJECT\n");
+				System_printf("Case ACCEPT\n");
 				controlAirSlider(true);
 				if (controlEjector(true, true)) {
 					if (controlEjector(false, true)) {
@@ -438,7 +438,7 @@ Void taskStateMachine(UArg a0, UArg a1) {
 				currentState = INIT_STATION;
 				break;
 			case REJECT_WORKPIECE:
-				System_printf("Case ACCEPT\n");
+				System_printf("Case REJECT\n");
 				if (movePlatform(false, true)) {
 					if (controlEjector(true, true)) {
 						if (controlEjector(false, true)) {
