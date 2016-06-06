@@ -323,7 +323,6 @@ void calibrateSensor() {
 	uint32_t height[2];
 	uint32_t heightReference[2];
 	enableMovement(true);
-	//initStation(); Just an idea! >D
 	festoDataObject.enableMovement = true;
 	for (int i = 0; i < 2; i++) {
 		festoDataObject.measuring = true;
