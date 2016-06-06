@@ -85,11 +85,6 @@ float offset = 29.00981997;
 
 festoData_type festoDataObject;
 
-//*****************************************************************************
-//
-// The error routine that is called if the driver library encounters an error.
-//
-//*****************************************************************************
 #ifdef DEBUG
 void
 __error__(char *pcFilename, uint32_t ui32Line)
@@ -102,7 +97,6 @@ __error__(char *pcFilename, uint32_t ui32Line)
  */
 Void timeFxn(UArg arg0)
 {
-	/* Explicit posting of Event_Id_00 by calling Event_post() */
 	Event_post(evt, Event_Id_00);
 }
 
@@ -554,18 +548,9 @@ Int main()
 		BIOS_exit(0);
 	}
 
-	Mailbox_Params mbxParams;
-	/* create a Mailbox Instance */
-	Mailbox_Params_init(&mbxParams);
-	mbxParams.readerEvent = evt;
-	mbxParams.readerEventId = Event_Id_05;
-	mbx = Mailbox_create((sizeof(uint32_t)), 1, &mbxParams, NULL);
-
     ui32SysClock = 120000000;
 
-	//
 	// Configure the device pins.
-	//
 	PinoutSet();
 
 	GPIOPinTypeGPIOOutput(GPIO_PORTL_BASE, GPIO_PIN_1);	//OUT 0 L1
@@ -607,30 +592,22 @@ Int main()
 	GPIOIntRegister(GPIO_PORTN_BASE, IntPortN);
 	GPIOIntRegister(GPIO_PORTP_BASE, IntSelectButton);
 	GPIOIntRegister(GPIO_PORTA_BASE, IntLoweredPositionSensor);
-	/* TODO:
-	 * Add Interrupt Registrations for the Sensor Interrupts.
-	 * 1) Up Sensor
-	 * 2) Down Sensor
-	 * In the ISRs stop movement of the platform immediately.
-	 * And send an event which can be received by the driverlib.
-	 * Maybe also introduce bool values to indicate platform position.
-	 */
 
-	//Initialize the UART
+	// Initialize the UART
 	QUT_UART_Init( ui32SysClock );
 
-	//Initialize AIN0
+	// Initialize AIN0
 	QUT_ADC0_Init();
 	QUT_UART_Send( (uint8_t *)"FestoTester/n", 11 );
 
-	///* Create a one-shot Clock Instance with timeout = 120000000 system time units
+	// Create a one-shot Clock Instance with timeout = 120000000 system time units
 	Clock_Params clkParams;
 	Clock_Params_init(&clkParams);
 	clkParams.startFlag = TRUE;
 	clkParams.period = 1000;
 	clk1 = Clock_create(timeFxn, 5, &clkParams, NULL);
 
-	//Initialize the time
+	// Initialize the time
 	Seconds_set(STARTING_TIME);
 
 	// Initialize an Event Instance
@@ -656,7 +633,7 @@ Int main()
 	festoDataObject.enableMovement  = false;
 	festoDataObject.measuring       = false;
 
-	//Initialize the screen
+	// Initialize the screen
 	initScreen(&festoDataObject);
 
     BIOS_start();    /* does not return */
